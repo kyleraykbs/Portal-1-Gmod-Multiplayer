@@ -1,0 +1,10 @@
+"VertexlitGeneric"
+{
+	"$basetexture" "sprites/blborder"
+	"%keywords" "invisible"
+	"$translucent" 1
+	"$halflambert" 1
+	"$model" 1
+	"$nocull" 1
+	
+}

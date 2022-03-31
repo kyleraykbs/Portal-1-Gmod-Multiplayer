@@ -1,0 +1,19 @@
+"VertexlitGeneric"
+{
+	"$basetexture" "models\weapons\w_models/portalgun/w_portalgun_glass"
+	"$detailscale"	"1"
+	"$detailblendfactor"	"0.6"
+
+	$translucent 1
+	$surfaceprop glass
+	$additive 1
+
+	
+	$halflambert 1
+	
+	$phong 1
+	$phongexponenttexture "models\weapons\w_models/portalgun/w_portalgun_exponent"
+	$phongboost 1
+	$phongfresnelranges "[1 1.5 2]"
+
+}
