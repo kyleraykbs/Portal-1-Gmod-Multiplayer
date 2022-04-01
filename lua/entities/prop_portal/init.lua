@@ -11,6 +11,13 @@ local function CorrectPortalAng(ang)
     return ang
 end
 
+local function ConvertForwardVector(vec)
+    -- flip up and forward
+    vec = Vector(vec.x, vec.z, vec.y)
+
+    return vec
+end
+
 local function FindAndSetLinkedPartner(prop_portal)
     if (!prop_portal.LinkedPartner or !prop_portal.LinkedPartner:IsValid() or !prop_portal.LinkedPartner.IsActive or !prop_portal.LinkedPartner.Portal:IsValid()) then
         print("No previously linked partner found... finding one now")
@@ -37,9 +44,121 @@ local function FindAndSetLinkedPartner(prop_portal)
     end
 end
 
+local function GetPortalBrush(portal)
+    -- trace a line up down left and right from the portal then find the closest hit
+    local besttrace = nil
+    
+    local function RunTest(pos)
+        local trbackwards = util.TraceLine({
+            start = pos,
+            endpos = portal:GetAngles():Forward() * -999999, -- backwards
+            filter = portal,
+            mask = MASK_SOLID_BRUSHONLY
+        })
+
+        if (trbackwards.Hit) then
+            besttrace = trbackwards
+        end
+        
+        local trforwards = util.TraceLine({
+            start = pos,
+            endpos = portal:GetAngles():Forward() * 999999, -- forwards
+            filter = portal,
+            mask = MASK_SOLID_BRUSHONLY
+        })
+
+        if (trforwards.Hit) then
+            if (besttrace == nil or besttrace.Fraction > trforwards.Fraction) then
+                besttrace = trforwards
+            end
+        end
+
+        local trleft = util.TraceLine({
+            start = pos,
+            endpos = portal:GetAngles():Right() * -999999, -- left
+            filter = portal,
+            mask = MASK_SOLID_BRUSHONLY
+        })
+
+        if (trleft.Hit) then
+            if (besttrace == nil or besttrace.Fraction > trleft.Fraction) then
+                besttrace = trleft
+            end
+        end
+
+        local trright = util.TraceLine({
+            start = pos,
+            endpos = portal:GetAngles():Right() * 999999, -- right
+            filter = portal,
+            mask = MASK_SOLID_BRUSHONLY
+        })
+        
+        if (trright.Hit) then
+            if (besttrace == nil or besttrace.Fraction > trright.Fraction) then
+                besttrace = trright
+            end
+        end
+
+        local trup = util.TraceLine({
+            start = pos,
+            endpos = portal:GetAngles():Up() * -999999, -- up
+            filter = portal,
+            mask = MASK_SOLID_BRUSHONLY
+        })
+
+        if (trup.Hit) then
+            if (besttrace == nil or besttrace.Fraction > trup.Fraction) then
+                besttrace = trup
+            end
+        end
+
+        local trdown = util.TraceLine({
+            start = pos,
+            endpos = portal:GetAngles():Up() * 999999, -- down
+            filter = portal,
+            mask = MASK_SOLID_BRUSHONLY
+        })
+
+        if (trdown.Hit) then
+            if (besttrace == nil or besttrace.Fraction > trdown.Fraction) then
+                besttrace = trdown
+            end
+        end
+
+    end
+
+    local amt = 10
+    RunTest(portal:GetPos() + Vector(0, 0, amt))
+    RunTest(portal:GetPos() + Vector(0, 0, -amt))
+    RunTest(portal:GetPos() + Vector(amt, 0, 0))
+    RunTest(portal:GetPos() + Vector(-amt, 0, 0))
+    RunTest(portal:GetPos() + Vector(0, amt, 0))
+    RunTest(portal:GetPos() + Vector(0, -amt, 0))
+
+
+
+    tr = besttrace
+    -- if we hit something
+    if (tr ~= nil) then
+        -- draw a line from the portal to the hit position
+        debugoverlay.Line(portal:GetPos(), tr.HitPos, 5, Color(255, 255, 0, 255), true)
+        -- draw a red box at the hit position
+        debugoverlay.Box(tr.HitPos, Vector(-5, -5, -5), Vector(5, 5, 5), 5, Color(255, 0, 0, 255), true)
+        print("tr.HitPos: " .. tr.HitPos[1])
+        -- if the hit entity is a brush
+        if (tr.Entity:IsWorld()) then
+            -- print the vertexes of the brush
+            print("Brush verts:")
+            -- return the hit entity
+            return tr.Entity
+        end
+    end
+end
+
 local function SetPortalPos(portal, pos, ang)
-    portal:SetPos(pos)
-    portal:SetAngles(ang)
+    portal:SetAngles(CorrectPortalAng(ang))
+    portal:SetPos(pos + CorrectPortalAng(portal:GetAngles()):Forward() * 0)
+    GetPortalBrush(portal)
 end
 
 local function SpawnPortal() 
@@ -81,14 +200,18 @@ end
 
 function ENT:Initialize( )
     print( "___Portal Initialize___" )
-    print( self:GetPos() )
-    print( self:GetAngles() )
+
     self.IsActive = false
     self.LinkedPartner = nil
     self.Portal = nil
-    for k, v in pairs(self:GetKeyValues()) do
-        print(k, v)
-    end
+
+    -- stop the portal from rendering
+    self:SetRenderMode( RENDERMODE_NONE )
+    -- stop the portal from casting shadows
+    self:DrawShadow( false )
+
+    self:SetSolid( SOLID_NONE )
+
     print( "________________________" )
 end
 
@@ -110,7 +233,7 @@ function ENT:AcceptInput( inputname, activator, caller, data )
                 self.Portal = SpawnPortal()
             end
             
-            SetPortalPos(self.Portal, self:GetPos(), CorrectPortalAng(self:GetAngles()))
+            SetPortalPos(self.Portal, self:GetPos(), self:GetAngles())
             
             print ("__ Linking Portal __")
             self.IsActive = true
