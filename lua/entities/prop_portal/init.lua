@@ -199,17 +199,18 @@ local function SetPortalPos(portal, pos, ang)
     portal:SetPos(pos)
     portal:SetAngles(CorrectPortalAng(ang)) 
     local brush = GetPortalBrush(portal)
+    local pushamt = 10
     if (brush ~= nil) then
         print("brushangle:" .. tostring(brush.angle))
         print("brush.pos:" .. tostring(brush.pos))
-        portal:SetPos(brush.pos + (CorrectPortalAng(portal:GetAngles()):Forward() * -8))
+        portal:SetPos(brush.pos + (CorrectPortalAng(portal:GetAngles()):Forward() * -pushamt))
         if (brush.angle.p == 0) then
             portal:SetAngles(CorrectPortalAng(brush.angle))
-            portal:SetPos(brush.pos + brush.angle:Forward() * 8)
+            portal:SetPos(brush.pos + brush.angle:Forward() * pushamt)
         end
     else
         print("ERROR!: brush is nil")
-        portal:SetPos(portal:GetPos() + (CorrectPortalAng(portal:GetAngles()):Forward() * -8))
+        portal:SetPos(portal:GetPos() + (CorrectPortalAng(portal:GetAngles()):Forward() * -pushamt))
     end
 end
 
