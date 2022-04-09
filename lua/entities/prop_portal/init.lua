@@ -192,21 +192,25 @@ local function GetPortalBrush(portal)
             return {angle = besttraceangle, pos = tr.HitPos}
         end
     end
+    return nil
 end
 
 local function SetPortalPos(portal, pos, ang)
     portal:SetPos(pos)
     portal:SetAngles(CorrectPortalAng(ang)) 
     local brush = GetPortalBrush(portal)
-    print("brushangle:" .. tostring(brush.angle))
-    print("brush.pos:" .. tostring(brush.pos))
-    portal:SetPos(brush.pos + (CorrectPortalAng(portal:GetAngles()):Forward() * -8))
-    if (brush.angle.p == 0) then
-        portal:SetAngles(CorrectPortalAng(brush.angle))
-        portal:SetPos(brush.pos + brush.angle:Forward() * 8)
+    if (brush ~= nil) then
+        print("brushangle:" .. tostring(brush.angle))
+        print("brush.pos:" .. tostring(brush.pos))
+        portal:SetPos(brush.pos + (CorrectPortalAng(portal:GetAngles()):Forward() * -8))
+        if (brush.angle.p == 0) then
+            portal:SetAngles(CorrectPortalAng(brush.angle))
+            portal:SetPos(brush.pos + brush.angle:Forward() * 8)
+        end
+    else
+        print("ERROR!: brush is nil")
+        portal:SetPos(portal:GetPos() + (CorrectPortalAng(portal:GetAngles()):Forward() * -8))
     end
-    -- print the angle
-    
 end
 
 local function SpawnPortal() 
