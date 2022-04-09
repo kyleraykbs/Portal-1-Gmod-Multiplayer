@@ -47,8 +47,11 @@ end
 local function GetPortalBrush(portal)
     -- trace a line up down left and right from the portal then find the closest hit
     local besttrace = nil
+    local besttraceangle = Angle(0, 0, 0)
     
     local function RunTest(pos)
+        local BestTraceBetter = false
+
         local trbackwards = util.TraceLine({
             start = pos,
             endpos = portal:GetAngles():Forward() * -999999, -- backwards
@@ -57,7 +60,10 @@ local function GetPortalBrush(portal)
         })
 
         if (trbackwards.Hit) then
-            besttrace = trbackwards
+            if (besttrace == nil or besttrace.Fraction > trbackwards.Fraction) then
+                besttrace = trbackwards
+                BestTraceBetter = true
+            end
         end
         
         local trforwards = util.TraceLine({
@@ -70,6 +76,7 @@ local function GetPortalBrush(portal)
         if (trforwards.Hit) then
             if (besttrace == nil or besttrace.Fraction > trforwards.Fraction) then
                 besttrace = trforwards
+                BestTraceBetter = true
             end
         end
 
@@ -83,6 +90,7 @@ local function GetPortalBrush(portal)
         if (trleft.Hit) then
             if (besttrace == nil or besttrace.Fraction > trleft.Fraction) then
                 besttrace = trleft
+                BestTraceBetter = true
             end
         end
 
@@ -96,6 +104,7 @@ local function GetPortalBrush(portal)
         if (trright.Hit) then
             if (besttrace == nil or besttrace.Fraction > trright.Fraction) then
                 besttrace = trright
+                BestTraceBetter = true
             end
         end
 
@@ -109,6 +118,7 @@ local function GetPortalBrush(portal)
         if (trup.Hit) then
             if (besttrace == nil or besttrace.Fraction > trup.Fraction) then
                 besttrace = trup
+                BestTraceBetter = true
             end
         end
 
@@ -122,18 +132,46 @@ local function GetPortalBrush(portal)
         if (trdown.Hit) then
             if (besttrace == nil or besttrace.Fraction > trdown.Fraction) then
                 besttrace = trdown
+                BestTraceBetter = true
             end
         end
 
+        return BestTraceBetter
     end
 
-    local amt = 10
-    RunTest(portal:GetPos() + Vector(0, 0, amt))
-    RunTest(portal:GetPos() + Vector(0, 0, -amt))
-    RunTest(portal:GetPos() + Vector(amt, 0, 0))
-    RunTest(portal:GetPos() + Vector(-amt, 0, 0))
-    RunTest(portal:GetPos() + Vector(0, amt, 0))
-    RunTest(portal:GetPos() + Vector(0, -amt, 0))
+    local amt = 8
+    if (RunTest(portal:GetPos() + Vector(0, 0, amt)) == true) then
+        print("up")
+        besttraceangle = Angle(90, 0, 0)
+    end
+    if (RunTest(portal:GetPos() + Vector(0, 0, -amt)) == true) then
+        print("down")
+        besttraceangle = Angle(-90, 0, 0)
+    end
+    if (RunTest(portal:GetPos() + Vector(amt, 0, 0)) == true) then
+        print("left")
+        besttraceangle = Angle(0, 0, 0)
+    end
+    if (RunTest(portal:GetPos() + Vector(-amt, 0, 0)) == true) then
+        print("right")
+        besttraceangle = Angle(0, 180, 0)
+    end
+    if (RunTest(portal:GetPos() + Vector(0, amt, 0)) == true) then
+        print("forward")
+        besttraceangle = Angle(0, 90, 0)
+    end
+    if (RunTest(portal:GetPos() + Vector(0, -amt, 0)) == true) then
+        print("backwards")
+        besttraceangle = Angle(0, -90, 0)
+    end
+
+    -- draw a debug box for all the positions we tested
+    debugoverlay.Box(portal:GetPos() + Vector(0, 0, amt), Vector(-2, -2, -2), Vector(2, 2, 2), 5, Color(255, 255, 0, 255), true)
+    debugoverlay.Box(portal:GetPos() + Vector(0, 0, -amt), Vector(-2, -2, -2), Vector(2, 2, 2), 5, Color(255, 255, 0, 255), true)
+    debugoverlay.Box(portal:GetPos() + Vector(amt, 0, 0), Vector(-2, -2, -2), Vector(2, 2, 2), 5, Color(255, 255, 0, 255), true)
+    debugoverlay.Box(portal:GetPos() + Vector(-amt, 0, 0), Vector(-2, -2, -2), Vector(2, 2, 2), 5, Color(255, 255, 0, 255), true)
+    debugoverlay.Box(portal:GetPos() + Vector(0, amt, 0), Vector(-2, -2, -2), Vector(2, 2, 2), 5, Color(255, 255, 0, 255), true)
+    debugoverlay.Box(portal:GetPos() + Vector(0, -amt, 0), Vector(-2, -2, -2), Vector(2, 2, 2), 5, Color(255, 255, 0, 255), true)
 
 
 
@@ -141,24 +179,34 @@ local function GetPortalBrush(portal)
     -- if we hit something
     if (tr ~= nil) then
         -- draw a line from the portal to the hit position
-        debugoverlay.Line(portal:GetPos(), tr.HitPos, 5, Color(255, 255, 0, 255), true)
+        debugoverlay.Line(portal:GetPos(), tr.HitPos, 5, Color(0, 255, 0, 255), true)
         -- draw a red box at the hit position
-        debugoverlay.Box(tr.HitPos, Vector(-5, -5, -5), Vector(5, 5, 5), 5, Color(255, 0, 0, 255), true)
+        -- debugoverlay.Box(tr.HitPos, Vector(-5, -5, -5), Vector(5, 5, 5), 5, Color(255, 0, 0, 255), true)
         print("tr.HitPos: " .. tr.HitPos[1])
         -- if the hit entity is a brush
         if (tr.Entity:IsWorld()) then
-            -- print the vertexes of the brush
-            print("Brush verts:")
-            -- return the hit entity
-            return tr.Entity
+            print("besttraceangle: " .. tostring(besttraceangle))
+            -- draw a green box at the angle
+            debugoverlay.Box(portal:GetPos() + besttraceangle:Forward() * 100, Vector(-3, -3, -3), Vector(3, 3, 3), 5, Color(0, 255, 0, 255), true)
+            -- return the hit position and the angle
+            return {angle = besttraceangle, pos = tr.HitPos}
         end
     end
 end
 
 local function SetPortalPos(portal, pos, ang)
-    portal:SetAngles(CorrectPortalAng(ang))
-    portal:SetPos(pos + CorrectPortalAng(portal:GetAngles()):Forward() * 0)
-    GetPortalBrush(portal)
+    portal:SetPos(pos)
+    portal:SetAngles(CorrectPortalAng(ang)) 
+    local brush = GetPortalBrush(portal)
+    print("brushangle:" .. tostring(brush.angle))
+    print("brush.pos:" .. tostring(brush.pos))
+    portal:SetPos(brush.pos + (CorrectPortalAng(portal:GetAngles()):Forward() * -8))
+    if (brush.angle.p == 0) then
+        portal:SetAngles(CorrectPortalAng(brush.angle))
+        portal:SetPos(brush.pos + brush.angle:Forward() * 8)
+    end
+    -- print the angle
+    
 end
 
 local function SpawnPortal() 
@@ -252,7 +300,7 @@ function ENT:AcceptInput( inputname, activator, caller, data )
 
         -- remove portal
         if (data == "0") then
-            -- Remove A Actual Portal
+            -- Remove the portal
             RemovePortal(self)
         end
     end
