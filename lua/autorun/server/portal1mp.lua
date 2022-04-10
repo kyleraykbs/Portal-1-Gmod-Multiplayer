@@ -119,9 +119,6 @@ hook.Add( "Tick", "Portal1MultiplayerTick", function()
 
                     debugoverlay.Box(rotatedvert, Vector(-1,-1,-1), Vector(1,1,1), 0, Color(255,255,255))
 
-                    local MirrorPos = MirrorPos(rotatedvert)
-
-
                     -- draw a line from the ent to the forward vector
                     debugoverlay.Line( rotatedvert, ent:GetPos(), 0, Color( 0, 255, 0, 255 ), true )
 
@@ -135,6 +132,8 @@ hook.Add( "Tick", "Portal1MultiplayerTick", function()
 
                     -- if it hit something
                     if (tr.Hit) then
+                        local MirrorPos = MirrorPos(rotatedvert)
+
                         debugoverlay.Box(MirrorPos, Vector(-1,-1,-1), Vector(1,1,1), 0, Color(255,0,255))
 
                         -- draw a box around the hit
