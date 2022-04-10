@@ -97,19 +97,15 @@ hook.Add( "Tick", "Portal1MultiplayerTick", function()
                     -- draw a line from the ent to the forward vector
                     debugoverlay.Line( nearestportal:GetPos(), nearestportal:GetPos() + fwd:Forward() * len, 0, Color( 0, 0, 255, 255 ), true )
 
+                    local correctedang = nearestportallinkedportal:GetAngles() - nearestportal:GetAngles()
+                    local correctedfwd = fwd + correctedang
+
+                    debugoverlay.Line( nearestportallinkedportal:GetPos(), nearestportallinkedportal:GetPos() + (correctedfwd:Forward() * len), 0, Color( 0, 0, 255, 255 ), true )
+
+                    local mirroredpos = nearestportallinkedportal:GetPos() + (correctedfwd:Forward() * len)
+                    
 
 
-                    local angleoffset = nearestportallinkedportal:GetAngles() - nearestportal:GetAngles()
-                    local fullangleoffset = (((((fwd + angleoffset):Forward()) * -1)) * len)
-                    local upvectoroffset = nearestportallinkedportal:GetAngles():Forward()
-                    local rightvectoroffset = nearestportallinkedportal:GetAngles():Right()
-                    rightvectoroffset = (((fullangleoffset * ((rightvectoroffset)) * -1) * 2))
-                    upvectoroffset = (((fullangleoffset * ((upvectoroffset)) * -1) * 2))
-                    local mirroredpos = nearestportallinkedportal:GetPos() + (fullangleoffset - (rightvectoroffset + upvectoroffset))
-
-
-
-                    debugoverlay.Line( nearestportallinkedportal:GetPos(), mirroredpos, 0, Color( 0, 255, 255, 255 ), true )
                     return mirroredpos
                 end
 
@@ -123,7 +119,8 @@ hook.Add( "Tick", "Portal1MultiplayerTick", function()
 
                     debugoverlay.Box(rotatedvert, Vector(-1,-1,-1), Vector(1,1,1), 0, Color(255,255,255))
 
-                    debugoverlay.Box(MirrorPos(rotatedvert), Vector(-1,-1,-1), Vector(1,1,1), 0, Color(255,255,255))
+                    local MirrorPos = MirrorPos(rotatedvert)
+
 
                     -- draw a line from the ent to the forward vector
                     debugoverlay.Line( rotatedvert, ent:GetPos(), 0, Color( 0, 255, 0, 255 ), true )
@@ -132,11 +129,14 @@ hook.Add( "Tick", "Portal1MultiplayerTick", function()
                     local tr = util.TraceLine( {
                         start = rotatedvert,
                         endpos = ent:GetPos(),
-                        filter = function( ent ) return ( ent:GetClass() == "seamless_portal" ) end
+                        filter = function( ent ) return ( ent:GetClass() == "seamless_portal" ) end,
+                        ignoreworld = true
                     } )
 
                     -- if it hit something
                     if (tr.Hit) then
+                        debugoverlay.Box(MirrorPos, Vector(-1,-1,-1), Vector(1,1,1), 0, Color(255,0,255))
+
                         -- draw a box around the hit
                         debugoverlay.Box( tr.HitPos, Vector(-1,-1,-1), Vector(1,1,1), 0, Color(255,0,0) )
 
