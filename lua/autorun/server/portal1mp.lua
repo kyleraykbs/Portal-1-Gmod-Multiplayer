@@ -38,6 +38,27 @@ hook.Add( "Tick", "Portal1MultiplayerTick", function()
                         table.insert( vertices, vert.pos )
                     end
                 end
+
+                local function optimizevertz(vertices)
+                    local maxverts = 40
+                    local tolarance = 8
+                    if (table.Count( vertices ) > maxverts) then
+                        print("OPTIMIZING VERTS")
+                        -- remove every other vert
+                        for i = 1, table.Count( vertices ), 2 do
+                            table.remove( vertices, i )
+                        end
+                    end
+
+                    if (table.Count( vertices ) > maxverts + tolarance) then
+                        local vertices = optimizevertz( vertices )
+                    end
+
+                    return vertices
+                end
+                 
+                vertices = optimizevertz( vertices )
+
                 -- set the vertices to the ent
                 ent.vertpoints = vertices
                 print(#ent.vertpoints)
@@ -47,7 +68,16 @@ hook.Add( "Tick", "Portal1MultiplayerTick", function()
                 for _, vert in ipairs( ent.vertpoints ) do
                     -- apply the rotation of the ent to the vert
                     local rotatedvert = ent:LocalToWorld( vert )
-                    debugoverlay.Box(rotatedvert, Vector(-1,-1,-1), Vector(1,1,1), 0.1, Color(255,255,255))
+                    debugoverlay.Box(rotatedvert, Vector(-1,-1,-1), Vector(1,1,1), 0, Color(255,255,255))
+
+                    -- draw a line to every vert
+                    for _, vert2 in ipairs( ent.vertpoints ) do
+                        -- if the vert isnt the same as the current vert
+                        if (vert ~= vert2) then
+                            -- draw a line between the two verts
+                            debugoverlay.Line(rotatedvert, ent:LocalToWorld( vert2 ), 0, Color(255,255,255))
+                        end
+                    end
                 end
             end
         end
