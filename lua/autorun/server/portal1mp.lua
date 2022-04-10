@@ -5,6 +5,13 @@ print("                 PORTAL 1 MULTIPLAYER VR")
 print("                 PORTAL 1 MULTIPLAYER VR")
 print("===========================================================")
 
+local function CorrectPortalAng(ang)
+    -- add 90 degrees to the angle
+    ang = ang + Angle(90, 0, 0)
+
+    return ang
+end
+
 hook.Add( "Tick", "Portal1MultiplayerTick", function()
 	for _, ent in ipairs( ents.FindByClass( "prop_physics" ) ) do
 
@@ -57,7 +64,7 @@ hook.Add( "Tick", "Portal1MultiplayerTick", function()
                     return vertices
                 end
                  
-                vertices = optimizevertz( vertices )
+                -- vertices = optimizevertz( vertices )
 
                 -- set the vertices to the ent
                 ent.vertpoints = vertices
@@ -72,26 +79,51 @@ hook.Add( "Tick", "Portal1MultiplayerTick", function()
                         nearestportalpos = portal:GetPos():Distance( ent:GetPos() )
                     end
                 end
+                local nearestportallinkedportal = nearestportal:ExitPortal()
 
                 -- draw a line from the ent to the nearest portal
-                debugoverlay.Line( ent:GetPos(), nearestportal:GetPos(), 0, Color( 255, 255, 0, 255 ), true )
+                -- debugoverlay.Line( ent:GetPos(), nearestportal:GetPos(), 0, Color( 255, 255, 0, 255 ), true )
 
-                -- get the forward vector of the middle of the ent and the middle of the portal then convert it to angles
-                local fwd = ent:GetPos() - nearestportal:GetPos()
-                fwd:Normalize()
-                fwd = fwd:Angle()
-                fwd = fwd:Forward() * -1
-                fwd = fwd:Angle()
+                local function MirrorPos(pos)
+                    -- get the forward vector of the middle of the ent and the middle of the portal then convert it to angles
+                    local fwd = pos - nearestportal:GetPos()
+                    -- get the length of the line
+                    local len = fwd:Length()
+                    fwd:Normalize()
+                    fwd = fwd:Angle()
+                    -- fwd = fwd:Forward() * -1
+                    -- fwd = fwd:Angle()
 
-                -- draw a line from the ent to the forward vector
-                debugoverlay.Line( ent:GetPos(), ent:GetPos() + fwd:Forward() * 100, 0, Color( 0, 0, 255, 255 ), true )
+                    -- draw a line from the ent to the forward vector
+                    debugoverlay.Line( nearestportal:GetPos(), nearestportal:GetPos() + fwd:Forward() * len, 0, Color( 0, 0, 255, 255 ), true )
+
+
+
+                    local angleoffset = nearestportallinkedportal:GetAngles() - nearestportal:GetAngles()
+                    local fullangleoffset = (((((fwd + angleoffset):Forward()) * -1)) * len)
+                    local upvectoroffset = nearestportallinkedportal:GetAngles():Forward()
+                    local rightvectoroffset = nearestportallinkedportal:GetAngles():Right()
+                    rightvectoroffset = (((fullangleoffset * ((rightvectoroffset)) * -1) * 2))
+                    upvectoroffset = (((fullangleoffset * ((upvectoroffset)) * -1) * 2))
+                    local mirroredpos = nearestportallinkedportal:GetPos() + (fullangleoffset - (rightvectoroffset + upvectoroffset))
+
+
+
+                    debugoverlay.Line( nearestportallinkedportal:GetPos(), mirroredpos, 0, Color( 0, 255, 255, 255 ), true )
+                    return mirroredpos
+                end
 
                 -- if the ent has vertpoints
                 -- itterate over the vertices
+                local HitPortal = false
                 for _, vert in ipairs( ent.vertpoints ) do
                     -- apply the rotation of the ent to the vert
                     local rotatedvert = ent:LocalToWorld( vert )
+                    local localrotatedvert = rotatedvert - ent:GetPos()
+
                     debugoverlay.Box(rotatedvert, Vector(-1,-1,-1), Vector(1,1,1), 0, Color(255,255,255))
+
+                    debugoverlay.Box(MirrorPos(rotatedvert), Vector(-1,-1,-1), Vector(1,1,1), 0, Color(255,255,255))
 
                     -- draw a line from the ent to the forward vector
                     debugoverlay.Line( rotatedvert, ent:GetPos(), 0, Color( 0, 255, 0, 255 ), true )
@@ -107,16 +139,18 @@ hook.Add( "Tick", "Portal1MultiplayerTick", function()
                     if (tr.Hit) then
                         -- draw a box around the hit
                         debugoverlay.Box( tr.HitPos, Vector(-1,-1,-1), Vector(1,1,1), 0, Color(255,0,0) )
-                    end
 
-                    -- -- draw a line to every vert
-                    -- for _, vert2 in ipairs( ent.vertpoints ) do
-                    --     -- if the vert isnt the same as the current vert
-                    --     if (vert ~= vert2) then
-                    --         -- draw a line between the two verts
-                    --         debugoverlay.Line(rotatedvert, ent:LocalToWorld( vert2 ), 0, Color(255,255,255))
-                    --     end
-                    -- end
+                        HitPortal = true
+                    end
+                end
+
+                if (HitPortal) then
+                    -- disable collision on the ent with the world
+                    ent:GetPhysicsObject():Wake()
+                    constraint.AdvBallsocket( ent, game.GetWorld(), 0, 0, Vector(0,0,0), Vector(0,0,0), 0, 0,  -180, -180, -180, 180, 180, 180,  0, 0, 1, 1, 1 )
+                else
+                    -- enable collision on the ent with the world
+                    constraint.RemoveConstraints(ent, "AdvBallsocket")
                 end
             end
         end
