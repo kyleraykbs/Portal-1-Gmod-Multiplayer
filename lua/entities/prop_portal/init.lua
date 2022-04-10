@@ -49,120 +49,128 @@ local function GetPortalBrush(portal)
     local besttrace = nil
     local besttraceangle = Angle(0, 0, 0)
     
-    local function RunTest(pos)
+    local function RunTest(pos, isvertical, isleftorright, isforwardorbackward)
         local BestTraceBetter = false
 
-        local trbackwards = util.TraceLine({
-            start = pos,
-            endpos = portal:GetAngles():Forward() * -999999, -- backwards
-            filter = portal,
-            mask = MASK_SOLID_BRUSHONLY
-        })
+        if (isforwardorbackward) then
+            local trbackwards = util.TraceLine({
+                start = pos,
+                endpos = pos + (Vector(-1,0,0) * 9999999), -- backwards
+                filter = portal,
+                mask = MASK_SOLID_BRUSHONLY
+            })
 
-        if (trbackwards.Hit) then
-            if (besttrace == nil or besttrace.Fraction > trbackwards.Fraction) then
-                besttrace = trbackwards
-                BestTraceBetter = true
+            if (trbackwards.Hit) then
+                if (besttrace == nil or besttrace.Fraction > trbackwards.Fraction) then
+                    besttrace = trbackwards
+                    BestTraceBetter = true
+                end
             end
-        end
-        
-        local trforwards = util.TraceLine({
-            start = pos,
-            endpos = portal:GetAngles():Forward() * 999999, -- forwards
-            filter = portal,
-            mask = MASK_SOLID_BRUSHONLY
-        })
+            
+            local trforwards = util.TraceLine({
+                start = pos,
+                endpos = pos + (Vector(1,0,0) * 9999999), -- forwards
+                filter = portal,
+                mask = MASK_SOLID_BRUSHONLY
+            })
 
-        if (trforwards.Hit) then
-            if (besttrace == nil or besttrace.Fraction > trforwards.Fraction) then
-                besttrace = trforwards
-                BestTraceBetter = true
-            end
-        end
-
-        local trleft = util.TraceLine({
-            start = pos,
-            endpos = portal:GetAngles():Right() * -999999, -- left
-            filter = portal,
-            mask = MASK_SOLID_BRUSHONLY
-        })
-
-        if (trleft.Hit) then
-            if (besttrace == nil or besttrace.Fraction > trleft.Fraction) then
-                besttrace = trleft
-                BestTraceBetter = true
+            if (trforwards.Hit) then
+                if (besttrace == nil or besttrace.Fraction > trforwards.Fraction) then
+                    besttrace = trforwards
+                    BestTraceBetter = true
+                end
             end
         end
 
-        local trright = util.TraceLine({
-            start = pos,
-            endpos = portal:GetAngles():Right() * 999999, -- right
-            filter = portal,
-            mask = MASK_SOLID_BRUSHONLY
-        })
-        
-        if (trright.Hit) then
-            if (besttrace == nil or besttrace.Fraction > trright.Fraction) then
-                besttrace = trright
-                BestTraceBetter = true
+        if (isleftorright) then
+            local trleft = util.TraceLine({
+                start = pos,
+                endpos = pos + (Vector(0,-1,0) * 9999999), -- left
+                filter = portal,
+                mask = MASK_SOLID_BRUSHONLY
+            })
+
+            if (trleft.Hit) then
+                if (besttrace == nil or besttrace.Fraction > trleft.Fraction) then
+                    besttrace = trleft
+                    BestTraceBetter = true
+                end
+            end
+
+            local trright = util.TraceLine({
+                start = pos,
+                endpos = pos + (Vector(0,1,0) * 9999999), -- right
+                filter = portal,
+                mask = MASK_SOLID_BRUSHONLY
+            })
+            
+            if (trright.Hit) then
+                if (besttrace == nil or besttrace.Fraction > trright.Fraction) then
+                    besttrace = trright
+                    BestTraceBetter = true
+                end
             end
         end
 
-        local trup = util.TraceLine({
-            start = pos,
-            endpos = portal:GetAngles():Up() * -999999, -- up
-            filter = portal,
-            mask = MASK_SOLID_BRUSHONLY
-        })
+        if (isvertical) then
+            local trup = util.TraceLine({
+                start = pos,
+                endpos = pos + (Vector(0,0,1) * 9999999), -- up
+                filter = portal,
+                mask = MASK_SOLID_BRUSHONLY
+            })
 
-        if (trup.Hit) then
-            if (besttrace == nil or besttrace.Fraction > trup.Fraction) then
-                besttrace = trup
-                BestTraceBetter = true
+            if (trup.Hit) then
+                if (besttrace == nil or besttrace.Fraction > trup.Fraction) then
+                    besttrace = trup
+                    BestTraceBetter = true
+                end
             end
-        end
 
-        local trdown = util.TraceLine({
-            start = pos,
-            endpos = portal:GetAngles():Up() * 999999, -- down
-            filter = portal,
-            mask = MASK_SOLID_BRUSHONLY
-        })
+            local trdown = util.TraceLine({
+                start = pos,
+                endpos = pos + (Vector(0,0,-1) * 9999999), -- down
+                filter = portal,
+                mask = MASK_SOLID_BRUSHONLY
+            })
 
-        if (trdown.Hit) then
-            if (besttrace == nil or besttrace.Fraction > trdown.Fraction) then
-                besttrace = trdown
-                BestTraceBetter = true
+            if (trdown.Hit) then
+                if (besttrace == nil or besttrace.Fraction > trdown.Fraction) then
+                    besttrace = trdown
+                    BestTraceBetter = true
+                end
             end
         end
 
         return BestTraceBetter
     end
 
-    local amt = 8
-    if (RunTest(portal:GetPos() + Vector(0, 0, amt)) == true) then
+    local besttracestartpoint = Vector(0, 0, 0)
+    local amt = 1
+    
+    if (RunTest(portal:GetPos() + Vector(0, 0, amt), true, false, false) == true) then
         print("up")
-        besttraceangle = Angle(90, 0, 0)
+        besttracestartpoint = portal:GetPos() + Vector(0, 0, amt)
     end
-    if (RunTest(portal:GetPos() + Vector(0, 0, -amt)) == true) then
+    if (RunTest(portal:GetPos() + Vector(0, 0, -amt), true, false, false) == true) then
         print("down")
-        besttraceangle = Angle(-90, 0, 0)
+        besttracestartpoint = portal:GetPos() + Vector(0, 0, -amt)
     end
-    if (RunTest(portal:GetPos() + Vector(amt, 0, 0)) == true) then
+    if (RunTest(portal:GetPos() + Vector(amt, 0, 0), false, false, true) == true) then
         print("left")
-        besttraceangle = Angle(0, 0, 0)
+        besttracestartpoint = portal:GetPos() + Vector(amt, 0, 0)
     end
-    if (RunTest(portal:GetPos() + Vector(-amt, 0, 0)) == true) then
+    if (RunTest(portal:GetPos() + Vector(-amt, 0, 0), false, false, true) == true) then
         print("right")
-        besttraceangle = Angle(0, 180, 0)
+        besttracestartpoint = portal:GetPos() + Vector(-amt, 0, 0)
     end
-    if (RunTest(portal:GetPos() + Vector(0, amt, 0)) == true) then
+    if (RunTest(portal:GetPos() + Vector(0, amt, 0), false, true, false) == true) then
         print("forward")
-        besttraceangle = Angle(0, 90, 0)
+        besttracestartpoint = portal:GetPos() + Vector(0, amt, 0)
     end
-    if (RunTest(portal:GetPos() + Vector(0, -amt, 0)) == true) then
+    if (RunTest(portal:GetPos() + Vector(0, -amt, 0), false, true, false) == true) then
         print("backwards")
-        besttraceangle = Angle(0, -90, 0)
+        besttracestartpoint = portal:GetPos() + Vector(0, -amt, 0)
     end
 
     -- draw a debug box for all the positions we tested
@@ -179,17 +187,18 @@ local function GetPortalBrush(portal)
     -- if we hit something
     if (tr ~= nil) then
         -- draw a line from the portal to the hit position
-        debugoverlay.Line(portal:GetPos(), tr.HitPos, 5, Color(0, 255, 0, 255), true)
+        debugoverlay.Line(besttracestartpoint, tr.HitPos, 5, Color(0, 255, 0, 255), true)
         -- draw a red box at the hit position
         -- debugoverlay.Box(tr.HitPos, Vector(-5, -5, -5), Vector(5, 5, 5), 5, Color(255, 0, 0, 255), true)
         print("tr.HitPos: " .. tr.HitPos[1])
         -- if the hit entity is a brush
         if (tr.Entity:IsWorld()) then
-            print("besttraceangle: " .. tostring(besttraceangle))
-            -- draw a green box at the angle
-            debugoverlay.Box(portal:GetPos() + besttraceangle:Forward() * 100, Vector(-3, -3, -3), Vector(3, 3, 3), 5, Color(0, 255, 0, 255), true)
+            -- print the Distance of the besttracestartpoint and the hit position
+            print("Distance: " .. tostring(besttracestartpoint:Distance(tr.HitPos)))
+            -- draw a line from the hit position to the normal of the hit entity
+            debugoverlay.Line(tr.HitPos, tr.HitPos + (tr.HitNormal:Angle():Forward() * 90), 5, Color(255, 0, 255, 255), true)
             -- return the hit position and the angle
-            return {angle = besttraceangle, pos = tr.HitPos}
+            return {angle = tr.HitNormal:Angle(), pos = tr.HitPos, normal = tr.HitNormal, distance = besttracestartpoint:Distance(tr.HitPos)}
         end
     end
     return nil
