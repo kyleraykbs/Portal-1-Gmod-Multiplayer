@@ -40,8 +40,8 @@ hook.Add( "Tick", "Portal1MultiplayerTick", function()
                 end
 
                 local function optimizevertz(vertices)
-                    local maxverts = 40
-                    local tolarance = 8
+                    local maxverts = 100
+                    local tolarance = 10
                     if (table.Count( vertices ) > maxverts) then
                         print("OPTIMIZING VERTS")
                         -- remove every other vert
@@ -63,6 +63,29 @@ hook.Add( "Tick", "Portal1MultiplayerTick", function()
                 ent.vertpoints = vertices
                 print(#ent.vertpoints)
             else
+
+                local nearestportal = nil
+                local nearestportalpos = 99999999999
+                for _, portal in ipairs( ents.FindByClass( "seamless_portal" ) ) do
+                    if portal:GetPos():Distance( ent:GetPos() ) < nearestportalpos then
+                        nearestportal = portal
+                        nearestportalpos = portal:GetPos():Distance( ent:GetPos() )
+                    end
+                end
+
+                -- draw a line from the ent to the nearest portal
+                debugoverlay.Line( ent:GetPos(), nearestportal:GetPos(), 0, Color( 255, 255, 0, 255 ), true )
+
+                -- get the forward vector of the middle of the ent and the middle of the portal then convert it to angles
+                local fwd = ent:GetPos() - nearestportal:GetPos()
+                fwd:Normalize()
+                fwd = fwd:Angle()
+                fwd = fwd:Forward() * -1
+                fwd = fwd:Angle()
+
+                -- draw a line from the ent to the forward vector
+                debugoverlay.Line( ent:GetPos(), ent:GetPos() + fwd:Forward() * 100, 0, Color( 0, 0, 255, 255 ), true )
+
                 -- if the ent has vertpoints
                 -- itterate over the vertices
                 for _, vert in ipairs( ent.vertpoints ) do
@@ -70,20 +93,36 @@ hook.Add( "Tick", "Portal1MultiplayerTick", function()
                     local rotatedvert = ent:LocalToWorld( vert )
                     debugoverlay.Box(rotatedvert, Vector(-1,-1,-1), Vector(1,1,1), 0, Color(255,255,255))
 
-                    -- draw a line to every vert
-                    for _, vert2 in ipairs( ent.vertpoints ) do
-                        -- if the vert isnt the same as the current vert
-                        if (vert ~= vert2) then
-                            -- draw a line between the two verts
-                            debugoverlay.Line(rotatedvert, ent:LocalToWorld( vert2 ), 0, Color(255,255,255))
-                        end
+                    -- draw a line from the ent to the forward vector
+                    debugoverlay.Line( rotatedvert, ent:GetPos(), 0, Color( 0, 255, 0, 255 ), true )
+
+                    -- trace a line from the ent to the forward vector and dont hit anything but the portal
+                    local tr = util.TraceLine( {
+                        start = rotatedvert,
+                        endpos = ent:GetPos(),
+                        filter = function( ent ) return ( ent:GetClass() == "seamless_portal" ) end
+                    } )
+
+                    -- if it hit something
+                    if (tr.Hit) then
+                        -- draw a box around the hit
+                        debugoverlay.Box( tr.HitPos, Vector(-1,-1,-1), Vector(1,1,1), 0, Color(255,0,0) )
                     end
+
+                    -- -- draw a line to every vert
+                    -- for _, vert2 in ipairs( ent.vertpoints ) do
+                    --     -- if the vert isnt the same as the current vert
+                    --     if (vert ~= vert2) then
+                    --         -- draw a line between the two verts
+                    --         debugoverlay.Line(rotatedvert, ent:LocalToWorld( vert2 ), 0, Color(255,255,255))
+                    --     end
+                    -- end
                 end
             end
         end
 
         -- if the modelname is models/props/metal_box.mdl
-        if ent:GetModel() == "models/props/metal_box.mdl" or "models/props_bts/glados_ball_reference.mdl" then
+        if ent:GetModel() == "models/props/metal_box.mdl" or ent:GetModel() == "models/props_bts/glados_ball_reference.mdl" then
             ent:GetPhysicsObject():SetMass( 35 ) -- maximum mass you can have while still being able to move it
         end
     end
